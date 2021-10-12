@@ -1,0 +1,86 @@
+- name: Assert Variables are Defined
+  ansible.builtin.assert:
+    fail_msg: >
+      Make sure the following variables are defined:
+        - cluster_deployment.clusterName
+        - hub_api_endpoint
+        - hub_token
+        - sealed_secrets_namespace
+        - sealed_secrets_rsa_secret_name
+    that:
+      - cluster_deployment.clusterName is defined
+      - hub_api_endpoint is defined
+      - hub_token is defined
+      - sealed_secrets_namespace is defined
+      - sealed_secrets_rsa_secret_name is defined
+
+- name: Set Cluster Name
+  ansible.builtin.set_fact:
+    cluster_name: "{{ cluster_deployment.clusterName }}"
+
+- name: Query Hub Sealed Secrets Key Pair
+  kubernetes.core.k8s_info:
+    api_key: "{{ hub_token }}"
+    api_version: v1
+    host: "{{ hub_api_endpoint }}"
+    kind: Secret
+    name: "{{ sealed_secrets_rsa_secret_name }}"
+    namespace: "{{ sealed_secrets_namespace }}"
+    validate_certs: no
+  register: key_pair_response
+
+- debug:
+    var: key_pair_response
+
+- name: Query ClusterDeployment Resource
+  kubernetes.core.k8s_info:
+    api_key: "{{ hub_token }}"
+    api_version: hive.openshift.io/v1
+    host: "{{ hub_api_endpoint }}"
+    kind: ClusterDeployment
+    name: "{{ cluster_name }}"
+    namespace: "{{ cluster_name }}"
+    validate_certs: no
+  register: cluster_deployment_response
+
+- name: Set Admin Kubeconfig Secret Name
+  ansible.builtin.set_fact:
+    admin_kubeconfig_secret: "{{ cluster_deployment_response.resources[0].spec.clusterMetadata.adminKubeconfigSecretRef.name }}"
+
+- name: Query Admin Kubeconfig
+  kubernetes.core.k8s_info:
+    api_key: "{{ hub_token }}"
+    api_version: v1
+    host: "{{ hub_api_endpoint }}"
+    kind: Secret
+    name: "{{ admin_kubeconfig_secret }}"
+    namespace: "{{ cluster_name }}"
+    validate_certs: no
+  register: admin_kubeconfig_response
+
+- name: Set Temp Directory Path
+  ansible.builtin.set_fact:
+    temp_directory: "{{ temp_directory_prefix | quote }}/{{ admin_kubeconfig_secret | quote }}"
+
+- name: Create Temporary Directory for Admin Kubeconfig
+  ansible.builtin.file:
+    mode: "0700"
+    path: "{{ temp_directory }}"
+    state: directory
+
+- name: Copy Admin Kubeconfig to Temporary Directory
+  ansible.builtin.copy:
+    content: "{{ admin_kubeconfig_response.resources[0].data.kubeconfig | b64decode }}"
+    dest: "{{ temp_directory }}/kubeconfig"
+    mode: "0400"
+
+- name: Deploy Sealed Secrets Controller
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'templates/sealed-secrets.j2') }}" 
+    kubeconfig: "{{ temp_directory }}/kubeconfig"
+    state: present
+
+- name: Delete Temporary Directory for Admin Kubeconfig
+  ansible.builtin.file:
+    path: "{{ temp_directory }}"
+    state: absent
