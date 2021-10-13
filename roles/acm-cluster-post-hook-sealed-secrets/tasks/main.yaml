@@ -1,12 +1,5 @@
 - name: Assert Variables are Defined
   ansible.builtin.assert:
-    fail_msg: >
-      Make sure the following variables are defined:
-        - cluster_deployment.clusterName
-        - hub_api_endpoint
-        - hub_token
-        - sealed_secrets_namespace
-        - sealed_secrets_rsa_secret_name
     that:
       - cluster_deployment.clusterName is defined
       - hub_api_endpoint is defined
@@ -33,7 +26,8 @@
     ansible_python_interpreter: /var/lib/awx/venv/ansible/bin/python
 
 - name: Query ClusterDeployment Resource
-  kubernetes.core.k8s_info:
+  local_action:
+    module: kubernetes.core.k8s_info
     api_key: "{{ hub_token }}"
     api_version: hive.openshift.io/v1
     host: "{{ hub_api_endpoint }}"
@@ -42,13 +36,16 @@
     namespace: "{{ cluster_name }}"
     validate_certs: no
   register: cluster_deployment_response
+  vars:
+    ansible_python_interpreter: /var/lib/awx/venv/ansible/bin/python
 
 - name: Set Admin Kubeconfig Secret Name
   ansible.builtin.set_fact:
     admin_kubeconfig_secret: "{{ cluster_deployment_response.resources[0].spec.clusterMetadata.adminKubeconfigSecretRef.name }}"
 
 - name: Query Admin Kubeconfig
-  kubernetes.core.k8s_info:
+  local_action:
+    module: kubernetes.core.k8s_info
     api_key: "{{ hub_token }}"
     api_version: v1
     host: "{{ hub_api_endpoint }}"
@@ -57,6 +54,8 @@
     namespace: "{{ cluster_name }}"
     validate_certs: no
   register: admin_kubeconfig_response
+  vars:
+    ansible_python_interpreter: /var/lib/awx/venv/ansible/bin/python
 
 - name: Set Temp Directory Path
   ansible.builtin.set_fact:
@@ -75,10 +74,13 @@
     mode: "0400"
 
 - name: Deploy Sealed Secrets Controller
-  kubernetes.core.k8s:
+  local_action:
+    module: kubernetes.core.k8s
     definition: "{{ lookup('template', 'templates/sealed-secrets.j2') }}" 
     kubeconfig: "{{ temp_directory }}/kubeconfig"
     state: present
+  vars:
+    ansible_python_interpreter: /var/lib/awx/venv/ansible/bin/python
 
 - name: Delete Temporary Directory for Admin Kubeconfig
   ansible.builtin.file:
