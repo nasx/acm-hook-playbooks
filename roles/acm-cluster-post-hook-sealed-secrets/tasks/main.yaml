@@ -19,7 +19,8 @@
     cluster_name: "{{ cluster_deployment.clusterName }}"
 
 - name: Query Hub Sealed Secrets Key Pair
-  kubernetes.core.k8s_info:
+  local_action:
+    module: kubernetes.core.k8s_info:
     api_key: "{{ hub_token }}"
     api_version: v1
     host: "{{ hub_api_endpoint }}"
@@ -28,9 +29,8 @@
     namespace: "{{ sealed_secrets_namespace }}"
     validate_certs: no
   register: key_pair_response
-
-- debug:
-    var: key_pair_response
+  vars:
+    ansible_python_interpreter: /var/lib/awx/venv/ansible/bin/python
 
 - name: Query ClusterDeployment Resource
   kubernetes.core.k8s_info:
