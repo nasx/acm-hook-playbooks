@@ -13,7 +13,7 @@
 
 - name: Query Hub Sealed Secrets Key Pair
   local_action:
-    module: kubernetes.core.k8s_info
+    module: community.kubernetes.k8s_info
     api_key: "{{ hub_token }}"
     api_version: v1
     host: "{{ hub_api_endpoint }}"
@@ -27,7 +27,7 @@
 
 - name: Query ClusterDeployment Resource
   local_action:
-    module: kubernetes.core.k8s_info
+    module: community.kubernetes.k8s_info
     api_key: "{{ hub_token }}"
     api_version: hive.openshift.io/v1
     host: "{{ hub_api_endpoint }}"
@@ -45,7 +45,7 @@
 
 - name: Query Admin Kubeconfig
   local_action:
-    module: kubernetes.core.k8s_info
+    module: community.kubernetes.k8s_info
     api_key: "{{ hub_token }}"
     api_version: v1
     host: "{{ hub_api_endpoint }}"
@@ -75,7 +75,7 @@
 
 - name: Deploy Sealed Secrets Controller
   local_action:
-    module: kubernetes.core.k8s
+    module: community.kubernetes.k8s
     definition: "{{ lookup('template', 'templates/sealed-secrets.j2') }}" 
     kubeconfig: "{{ temp_directory }}/kubeconfig"
     state: present
