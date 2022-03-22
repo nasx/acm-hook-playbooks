@@ -22,8 +22,6 @@
     namespace: "{{ sealed_secrets_namespace }}"
     validate_certs: no
   register: key_pair_response
-  vars:
-    ansible_python_interpreter: /var/lib/awx/venv/ansible/bin/python
 
 - name: Query ClusterDeployment Resource
   local_action:
@@ -36,8 +34,6 @@
     namespace: "{{ cluster_name }}"
     validate_certs: no
   register: cluster_deployment_response
-  vars:
-    ansible_python_interpreter: /var/lib/awx/venv/ansible/bin/python
 
 - name: Set Admin Kubeconfig Secret Name
   ansible.builtin.set_fact:
@@ -54,8 +50,6 @@
     namespace: "{{ cluster_name }}"
     validate_certs: no
   register: admin_kubeconfig_response
-  vars:
-    ansible_python_interpreter: /var/lib/awx/venv/ansible/bin/python
 
 - name: Set Temp Directory Path
   ansible.builtin.set_fact:
@@ -80,8 +74,6 @@
     kubeconfig: "{{ temp_directory }}/kubeconfig"
     state: present
     validate_certs: no
-  vars:
-    ansible_python_interpreter: /var/lib/awx/venv/ansible/bin/python
 
 - name: Delete Temporary Directory for Admin Kubeconfig
   ansible.builtin.file:
