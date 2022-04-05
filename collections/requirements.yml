@@ -1,4 +1,12 @@
 collections:
+  - name: amazon.aws
+    source: https://galaxy.ansible.com
+  - name: ansible.posix
+    source: https://galaxy.ansible.com
+  - name: community.aws
+    source: https://galaxy.ansible.com
+  - name: community.general
+    source: https://galaxy.ansible.com
   - name: community.kubernetes
     source: https://galaxy.ansible.com
     version: ">=1.2.0,<2.0.0"
