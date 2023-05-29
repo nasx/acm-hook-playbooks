@@ -1,0 +1,44 @@
+- name: Make Sure target_clusters is Defined
+  ansible.builtin.assert:
+    fail_msg: "It appears ACM did not pass target_clusters as an extra var or target_clusters is not a list!"
+    that:
+      - target_clusters is defined
+      - target_clusters | type_debug == "list"
+
+- name: Debug target_clusters
+  ansible.builtin.debug:
+    var: target_clusters
+    verbosity: 1
+
+- name: Query ManagedCluster Resources
+  kubernetes.core.k8s_info:
+    api_version: cluster.open-cluster-management.io/v1
+    kind: ManagedCluster
+    name: "{{ item }}"
+  loop: "{{ target_clusters }}"
+  register: managedcluster_results
+
+- name: Build List of Base Domains
+  ansible.builtin.set_fact:
+    cluster_base_domains: "{{ cluster_base_domains + [ managedcluster_results | community.general.json_query(url_query) | regex_search(regex_query, '\\1', multiline=True) | first ] }}"
+  loop: "{{ target_clusters }}"
+  loop_control:
+    loop_var: cluster
+  vars:
+    regex_query: "https://api.(.*):6443"
+    url_query: "results[?item==`{{ cluster }}`].resources[0].spec.managedClusterClientConfigs[0].url"
+
+- name: Debug cluster_base_domains
+  ansible.builtin.debug:
+    var: cluster_base_domains
+    verbosity: 1
+
+- name: Build List of Targets
+  ansible.builtin.set_fact:
+    haproxy_targets: "{{ haproxy_targets + [ lookup('community.general.dig', 'fake.apps.' + item + '.') ] }}"
+  loop: "{{ cluster_base_domains }}"
+
+- name: Debug haproxy_targets
+  ansible.builtin.debug:
+    var: haproxy_targets
+    verbosity: 1

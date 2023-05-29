@@ -1,0 +1,23 @@
+- name: Set HAProxy Target List
+  ansible.builtin.set_fact:
+    haproxy_target_list: "{{ haproxy_target_list + [{ 'name': item.0, 'ip': item.1 }] }}"
+  loop: "{{ target_clusters | zip(hostvars['localhost']['haproxy_targets']) | list }}"
+
+- name: Debug haproxy_target_list
+  ansible.builtin.debug:
+    var: haproxy_target_list
+
+- name: Render haproxy.cfg Template
+  ansible.builtin.template:
+    src: templates/haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    owner: root
+    group: root
+    mode: 0644
+    setype: etc_t
+
+- name: Enable/Start haproxy Service
+  ansible.builtin.systemd:
+    enabled: yes
+    name: haproxy
+    state: restarted
