@@ -1,12 +1,12 @@
 - name: Query Endpoints for target_clusters
-  gather_facts: no
+  gather_facts: false
   hosts: localhost
   roles:
-    - name: posthook-omc-haproxy-discover
+    - role: posthook-omc-haproxy-discover
 
 - name: Configure HAProxy
-  become: yes
-  gather_facts: no
+  become: true
+  gather_facts: false
   hosts: omc-ltm.lab.uc2.io
   roles:
-    - name: posthook-omc-haproxy
+    - role: posthook-omc-haproxy

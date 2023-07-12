@@ -35,7 +35,7 @@
 
 - name: Build List of Targets
   ansible.builtin.set_fact:
-    haproxy_targets: "{{ haproxy_targets + [ lookup('community.general.dig', 'fake.apps.' + item + '.') ] }}"
+    haproxy_targets: "{{ haproxy_targets + [lookup('community.general.dig', 'fake.apps.' + item + '.', wantlist=true) | first] }}"
   loop: "{{ cluster_base_domains }}"
 
 - name: Debug haproxy_targets
